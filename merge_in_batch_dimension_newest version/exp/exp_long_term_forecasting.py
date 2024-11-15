@@ -14,7 +14,6 @@ from utils.augmentation import run_augmentation,run_augmentation_single
 
 warnings.filterwarnings('ignore')
 
-
 class Exp_Long_Term_Forecast(Exp_Basic):
     def __init__(self, args):
         super(Exp_Long_Term_Forecast, self).__init__(args)
@@ -118,6 +117,9 @@ class Exp_Long_Term_Forecast(Exp_Basic):
                 batch_x_mark = batch_x_mark.float().to(self.device)
                 batch_y_mark = batch_y_mark.float().to(self.device)
 
+                # print(len(train_loader))
+                # print(batch_x.size(), batch_y.size(), batch_x_mark.size(), batch_y_mark.size())
+                # exit()
 
 
 
@@ -199,6 +201,9 @@ class Exp_Long_Term_Forecast(Exp_Basic):
 
                 batch_x_mark = batch_x_mark.float().to(self.device)
                 batch_y_mark = batch_y_mark.float().to(self.device)
+
+                # print(batch_x.size(), batch_y.size(), batch_x_mark.size(), batch_y_mark.size())
+                # exit()
 
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
