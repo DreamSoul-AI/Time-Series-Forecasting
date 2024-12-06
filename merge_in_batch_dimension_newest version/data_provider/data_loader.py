@@ -74,6 +74,7 @@ class Dataset_ETT_hour(Dataset):
 
         df_stamp = df_raw[['date']][border1:border2]
         df_stamp['date'] = pd.to_datetime(df_stamp.date)
+
         if self.timeenc == 0:
             df_stamp['month'] = df_stamp.date.apply(lambda row: row.month, 1)
             df_stamp['day'] = df_stamp.date.apply(lambda row: row.day, 1)
@@ -81,8 +82,13 @@ class Dataset_ETT_hour(Dataset):
             df_stamp['hour'] = df_stamp.date.apply(lambda row: row.hour, 1)
             data_stamp = df_stamp.drop(['date'], 1).values
         elif self.timeenc == 1:
+
             data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
-            data_stamp = data_stamp.transpose(1, 0) 
+            data_stamp = data_stamp.transpose(1, 0)
+            # print(data_stamp)
+            # print(type(data_stamp))
+            # print(data_stamp.shape)
+            # exit()
 
         self.data_x = data[border1:border2]
         self.data_y = data[border1:border2]
@@ -91,6 +97,7 @@ class Dataset_ETT_hour(Dataset):
             self.data_x, self.data_y, augmentation_tags = run_augmentation_single(self.data_x, self.data_y, self.args)
             
         self.data_stamp = data_stamp
+
 
     def __getitem__(self, index):
         if self.args.feature_type == 'multi':
@@ -106,8 +113,9 @@ class Dataset_ETT_hour(Dataset):
             seq_x_mark = self.data_stamp[s_begin:s_end]
             seq_y_mark = self.data_stamp[r_begin:r_end]
 
-            # print(seq_x.shape, seq_y.shape, seq_x_mark.shape, seq_y_mark.shape)
-            # print(type(seq_x), type(seq_y), type(seq_x_mark), type(seq_y_mark))
+            # print(seq_x_mark.shape, seq_y_mark.shape)
+            # print(type(seq_x_mark), type(seq_y_mark))
+            # print(seq_x_mark)
             # exit()
 
         else:
@@ -219,6 +227,7 @@ class Dataset_ETT_minute(Dataset):
         elif self.timeenc == 1:
             data_stamp = time_features(pd.to_datetime(df_stamp['date'].values), freq=self.freq)
             data_stamp = data_stamp.transpose(1, 0)
+
 
         self.data_x = data[border1:border2]
         self.data_y = data[border1:border2]

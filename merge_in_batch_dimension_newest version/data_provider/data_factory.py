@@ -144,6 +144,7 @@ def data_provider(args, flag, tdatapath = None, tdata = None, datapath = None, d
                 drop_last = False
             Datasets = []
             length = len(Datas)
+            lengsum = 0
             for i in range(length):
                 Data = Datas[i]
                 Path = Filepaths[i]
@@ -160,7 +161,8 @@ def data_provider(args, flag, tdatapath = None, tdata = None, datapath = None, d
                     seasonal_patterns=args.seasonal_patterns
                 )
                 Datasets.append(data_set)
-            print(flag, len(Datasets[0]) * len(Datasets))
+                lengsum += len(Datasets[i])
+            print(flag, lengsum)
 
             Dataset = ConcatDataset(Datasets)
             data_loader = DataLoader(

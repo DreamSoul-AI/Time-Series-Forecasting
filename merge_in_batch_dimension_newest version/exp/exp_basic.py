@@ -30,6 +30,7 @@ class Exp_Basic(object):
             'FreTS': FreTS,
             'MambaSimple': MambaSimple,
             'TimeMixer': TimeMixer,
+            'TimeXer': TimeXer,
             'TSMixer': TSMixer,
             'SegRNN': SegRNN,
             'TemporalFusionTransformer': TemporalFusionTransformer
