@@ -199,7 +199,7 @@ class Model(nn.Module):
                                          for _ in range(configs.e_layers)])
 
         self.preprocess = series_decomp(configs.moving_avg)
-        self.enc_in = configs.enc_in
+        # self.enc_in = configs.enc_in
 
         if self.channel_independence:
             self.enc_embedding = DataEmbedding_wo_pos(1, configs.d_model, configs.embed, configs.freq,
@@ -256,7 +256,7 @@ class Model(nn.Module):
         if self.task_name == 'imputation' or self.task_name == 'anomaly_detection':
             if self.channel_independence:
                 self.projection_layer = nn.Linear(
-                    configs.d_model, 1, bias=True)
+                    configs.d_model, configs.c_out, bias=True)
             else:
                 self.projection_layer = nn.Linear(
                     configs.d_model, configs.c_out, bias=True)

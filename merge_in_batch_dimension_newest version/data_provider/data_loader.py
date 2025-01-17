@@ -248,12 +248,26 @@ class Dataset_ETT_minute(Dataset):
             seq_x = self.data_x[s_begin:s_end]
             seq_y = self.data_y[r_begin:r_end]
 
+            # TX = seq_x.shape[0]
+            # TY = seq_x.shape[0]
+            #
+            # seq_x = torch.tensor(seq_x).permute(1,0)
+            # seq_y = torch.tensor(seq_y).permute(1,0)
+            #
+            # seq_x = seq_x.unsqueeze(-1)
+            # seq_y = seq_y.unsqueeze(-1)
+            # print(seq_x.size())
+            # exit()
+
             seq_x_mark = self.data_stamp[s_begin:s_end]
             seq_y_mark = self.data_stamp[r_begin:r_end]
 
-            # print(seq_x.shape, seq_y.shape, seq_x_mark.shape, seq_y_mark.shape)
-            # print(type(seq_x), type(seq_y), type(seq_x_mark), type(seq_y_mark))
+            # print(seq_x_mark.shape, seq_y_mark.shape)
+            # print(type(seq_x_mark), type(seq_y_mark))
+            # print(seq_x_mark)
             # exit()
+
+
 
         else:
             feat_id = index // self.tot_len
@@ -319,6 +333,9 @@ class Dataset_Custom(Dataset):
         self.data_path = data_path
         self.__read_data__()
 
+        self.enc_in = self.data_x.shape[-1]
+        self.tot_len = len(self.data_x) - self.seq_len - self.pred_len + 1
+
     def __read_data__(self):
         self.scaler = StandardScaler()
         df_raw = pd.read_csv(os.path.join(self.root_path,
@@ -373,23 +390,67 @@ class Dataset_Custom(Dataset):
         self.data_stamp = data_stamp
 
     def __getitem__(self, index):
-        s_begin = index
-        s_end = s_begin + self.seq_len
-        r_begin = s_end - self.label_len
-        r_end = r_begin + self.label_len + self.pred_len
+        if self.args.feature_type == 'multi':
 
-        seq_x = self.data_x[s_begin:s_end]
-        seq_y = self.data_y[r_begin:r_end]
-        seq_x_mark = self.data_stamp[s_begin:s_end]
-        seq_y_mark = self.data_stamp[r_begin:r_end]
+            s_begin = index
+            s_end = s_begin + self.seq_len
+            r_begin = s_end - self.label_len
+            r_end = r_begin + self.label_len + self.pred_len
+
+            seq_x = self.data_x[s_begin:s_end]
+            seq_y = self.data_y[r_begin:r_end]
+
+            # TX = seq_x.shape[0]
+            # TY = seq_x.shape[0]
+            #
+            # seq_x = torch.tensor(seq_x).permute(1,0)
+            # seq_y = torch.tensor(seq_y).permute(1,0)
+            #
+            # seq_x = seq_x.unsqueeze(-1)
+            # seq_y = seq_y.unsqueeze(-1)
+            # print(seq_x.size())
+            # exit()
+
+
+            seq_x_mark = self.data_stamp[s_begin:s_end]
+            seq_y_mark = self.data_stamp[r_begin:r_end]
+
+
+
+
+        else:
+            feat_id = index // self.tot_len
+            s_begin = index % self.tot_len
+
+            # s_begin = index
+            s_end = s_begin + self.seq_len
+            r_begin = s_end - self.label_len
+            r_end = r_begin + self.label_len + self.pred_len
+
+            # seq_x = self.data_x[s_begin:s_end]
+            # seq_y = self.data_y[r_begin:r_end]
+
+            seq_x = self.data_x[s_begin:s_end, feat_id:feat_id + 1]
+            seq_y = self.data_y[r_begin:r_end, feat_id:feat_id + 1]
+
+            seq_x_mark = self.data_stamp[s_begin:s_end]
+            seq_y_mark = self.data_stamp[r_begin:r_end]
+
+            # print(seq_x.shape, seq_y.shape, seq_x_mark.shape, seq_y_mark.shape)
+            # print(type(seq_x), type(seq_y), type(seq_x_mark), type(seq_y_mark))
+            # exit()
 
         return seq_x, seq_y, seq_x_mark, seq_y_mark
 
     def __len__(self):
-        return len(self.data_x) - self.seq_len - self.pred_len + 1
+        if self.args.feature_type == 'multi':
+            return (len(self.data_x) - self.seq_len - self.pred_len + 1)
+        else:
+            return (len(self.data_x) - self.seq_len - self.pred_len + 1) * self.enc_in / 7
 
     def inverse_transform(self, data):
         return self.scaler.inverse_transform(data)
+
 
 
 class Dataset_M4(Dataset):

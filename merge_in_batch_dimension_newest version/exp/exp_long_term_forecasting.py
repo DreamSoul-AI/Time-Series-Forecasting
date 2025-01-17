@@ -12,6 +12,8 @@ import numpy as np
 from utils.dtw_metric import dtw,accelerated_dtw
 from utils.augmentation import run_augmentation,run_augmentation_single
 
+from torchinfo import summary
+
 warnings.filterwarnings('ignore')
 
 class Exp_Long_Term_Forecast(Exp_Basic):
@@ -42,6 +44,7 @@ class Exp_Long_Term_Forecast(Exp_Basic):
     def _select_criterion(self):
         criterion = nn.MSELoss()
         return criterion
+
 
     def vali(self, vali_data, vali_loader, criterion):
         total_loss = []
@@ -117,15 +120,23 @@ class Exp_Long_Term_Forecast(Exp_Basic):
                 batch_x_mark = batch_x_mark.float().to(self.device)
                 batch_y_mark = batch_y_mark.float().to(self.device)
 
-                # print(len(train_loader))
-                # print(batch_x.size(), batch_y.size(), batch_x_mark.size(), batch_y_mark.size())
-                # exit()
-
-
 
                 # decoder input
                 dec_inp = torch.zeros_like(batch_y[:, -self.args.pred_len:, :]).float()
                 dec_inp = torch.cat([batch_y[:, :self.args.label_len, :], dec_inp], dim=1).float().to(self.device)
+
+                # print(len(train_loader))
+                # print(batch_x.size(), batch_y.size(), batch_x_mark.size(), batch_y_mark.size())
+                # print(type(batch_x))
+                # batch, timeS, FN = batch_x.size()
+                # batchM, timeSM, FNM = batch_x_mark.size()
+                # batchD, timeDS, FND = dec_inp.size()
+                # batchDM, timeSDM, FNDM = batch_y_mark.size()
+                # inputdata = [(batch, timeS, FN), (batchM, timeSM, FNM),(batchD, timeDS, FND), (batchDM, timeSDM, FNDM)]
+                # print(inputdata)
+                #
+                # summary(self.model, input_size=inputdata)
+                # exit()
 
                 # encoder - decoder
                 if self.args.use_amp:
