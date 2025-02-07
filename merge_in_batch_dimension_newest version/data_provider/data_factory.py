@@ -60,6 +60,7 @@ def my_collate(batch):
     seqx_mark_tensor = torch.cat(seqxmark_tensor_combine,dim = 0)
     seqy_mark_tensor = torch.cat(seqymark_tensor_combine,dim = 0)
 
+
     return x_processed,y_processed,seqx_mark_tensor,seqy_mark_tensor
 
 # the data paths of the train is different from that of the test/validation. so I devided them into to cases

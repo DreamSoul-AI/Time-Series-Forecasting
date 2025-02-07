@@ -86,6 +86,12 @@ class WeekOfYear(TimeFeature):
     def __call__(self, index: pd.DatetimeIndex) -> np.ndarray:
         return (index.isocalendar().week - 1) / 52.0 - 0.5
 
+class YearOfCentry(TimeFeature):
+    """Year of Centry encoded as value between [-0.5, 0.5]"""
+
+    def __call__(self, index: pd.DatetimeIndex) -> np.ndarray:
+        return (index.year - 1990) / 31.0 - 0.5
+
 
 def time_features_from_frequency_str(freq_str: str) -> List[TimeFeature]:
     """
@@ -110,6 +116,7 @@ def time_features_from_frequency_str(freq_str: str) -> List[TimeFeature]:
             DayOfWeek,
             DayOfMonth,
             DayOfYear,
+            YearOfCentry,
         ],
         offsets.Second: [
             SecondOfMinute,
@@ -118,6 +125,7 @@ def time_features_from_frequency_str(freq_str: str) -> List[TimeFeature]:
             DayOfWeek,
             DayOfMonth,
             DayOfYear,
+            YearOfCentry,
         ],
     }
 

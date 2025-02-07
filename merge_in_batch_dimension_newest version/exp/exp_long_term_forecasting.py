@@ -103,6 +103,10 @@ class Exp_Long_Term_Forecast(Exp_Basic):
         model_optim = self._select_optimizer()
         criterion = self._select_criterion()
 
+        self.model.root_path = self.args.root_path
+        self.model.data_path = self.args.tdata_path
+        self.model.target = self.args.target
+
         if self.args.use_amp:
             scaler = torch.cuda.amp.GradScaler()
 
@@ -202,6 +206,11 @@ class Exp_Long_Term_Forecast(Exp_Basic):
 
         preds = []
         trues = []
+
+        self.model.root_path = self.args.root_path
+        self.model.data_path = self.args.data_path
+        self.model.target = self.args.target
+
         folder_path = './test_results/' + setting + '/'
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)

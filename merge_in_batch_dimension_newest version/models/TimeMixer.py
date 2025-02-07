@@ -197,12 +197,15 @@ class Model(nn.Module):
         self.channel_independence = configs.channel_independence
         self.pdm_blocks = nn.ModuleList([PastDecomposableMixing(configs)
                                          for _ in range(configs.e_layers)])
+        self.root_path = configs.root_path
+        self.data_path = configs.tdata_path
+        self.target = configs.target
 
         self.preprocess = series_decomp(configs.moving_avg)
         # self.enc_in = configs.enc_in
 
         if self.channel_independence:
-            self.enc_embedding = DataEmbedding_wo_pos(1, configs.d_model, configs.embed, configs.freq,
+            self.enc_embedding = DataEmbedding_wo_pos(self.root_path,self.data_path,self.target,1, configs.d_model, configs.embed, configs.freq,
                                                       configs.dropout)
         else:
             self.enc_embedding = DataEmbedding_wo_pos(configs.enc_in, configs.d_model, configs.embed, configs.freq,
