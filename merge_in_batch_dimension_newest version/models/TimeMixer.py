@@ -203,10 +203,11 @@ class Model(nn.Module):
 
         self.preprocess = series_decomp(configs.moving_avg)
         # self.enc_in = configs.enc_in
+        self.name = []
 
         if self.channel_independence:
-            self.enc_embedding = DataEmbedding_wo_pos(self.root_path,self.data_path,self.target,1, configs.d_model, configs.embed, configs.freq,
-                                                      configs.dropout)
+            self.enc_embedding = DataEmbedding_wo_pos(1, configs.d_model, configs.embed, configs.freq,
+                                                      configs.dropout,self.name)
         else:
             self.enc_embedding = DataEmbedding_wo_pos(configs.enc_in, configs.d_model, configs.embed, configs.freq,
                                                       configs.dropout)

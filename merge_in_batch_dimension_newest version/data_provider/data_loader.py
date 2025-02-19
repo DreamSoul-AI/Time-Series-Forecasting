@@ -191,6 +191,15 @@ class Dataset_ETT_minute(Dataset):
         self.enc_in = self.data_x.shape[-1]
         self.tot_len = len(self.data_x) - self.seq_len - self.pred_len + 1
 
+        raw = pd.read_csv(os.path.join(self.root_path,
+                                          self.data_path))
+        self.feature_name = list(raw.columns)
+
+        self.feature_name.remove(target)
+        self.feature_name.remove('date')
+        self.feature_name.append(target)
+
+
     def __read_data__(self):
         self.scaler = StandardScaler()
         df_raw = pd.read_csv(os.path.join(self.root_path,
@@ -240,6 +249,8 @@ class Dataset_ETT_minute(Dataset):
     def __getitem__(self, index):
         if self.args.feature_type == 'multi':
 
+            feature_name = self.feature_name
+
             s_begin = index
             s_end = s_begin + self.seq_len
             r_begin = s_end - self.label_len
@@ -270,6 +281,9 @@ class Dataset_ETT_minute(Dataset):
 
 
         else:
+
+            feature_name = self.feature_name
+
             feat_id = index // self.tot_len
             s_begin = index % self.tot_len
 
@@ -291,7 +305,7 @@ class Dataset_ETT_minute(Dataset):
             # print(type(seq_x), type(seq_y), type(seq_x_mark), type(seq_y_mark))
             # exit()
 
-        return seq_x, seq_y, seq_x_mark, seq_y_mark
+        return seq_x, seq_y, seq_x_mark, seq_y_mark, feature_name
 
     def __len__(self):
         if self.args.feature_type == 'multi':
@@ -391,6 +405,7 @@ class Dataset_Custom(Dataset):
 
     def __getitem__(self, index):
         if self.args.feature_type == 'multi':
+
 
             s_begin = index
             s_end = s_begin + self.seq_len

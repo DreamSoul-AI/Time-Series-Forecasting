@@ -1,4 +1,3 @@
-import os
 
 import torch
 import torch.nn as nn
@@ -10,74 +9,23 @@ import os
 from transformers import BertTokenizer, BertModel
 
 
-class FeatureNameLoader():
-    def __init__(self,root_path, data_paths,target):
-        self.root_path = root_path
-        self.data_paths = data_paths
-        self.target = target
-        self.featureDatasets = []
-    def loading(self):
-        dataps = self.data_paths.split(',')
-        for datap in dataps:
-            df_raw = pd.read_csv(os.path.join(self.root_path,
-                                              datap))
-            cols = list(df_raw.columns)
-            cols.remove(self.target)
-            cols.remove('date')
-            cols.insert(0,'date')
-            cols.append(self.target)
-            self.featureDatasets.extend(cols)
-
-
-class FeatureNameEmbedding(nn.Module):
-    def __init__(self, d_model):
-        super(FeatureNameEmbedding, self).__init__()
-
-        input_dim = 384
-        hidden_dim = 128
-        output_dim = d_model
-
-        model_name = "microsoft/MiniLM-L12-H384-uncased"
-
-        self.tokenizer = BertTokenizer.from_pretrained(model_name)
-        self.Bmodel = BertModel.from_pretrained(model_name, output_hidden_states=True).to('cuda')
-        self.Bmodel.eval()
-
-
-        self.embed = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, output_dim)
-        ).to('cuda')
-
-    def forward(self, feature_name=["High_Voltage_Upper_Fluid_Level", "High_Voltage_Lower_Fluid_Level", "Medium_Voltage_Upper_Fluid_Level", "Medium_Voltage_Lower_Fluid_Level", "Low_Voltage_Upper_Fluid_Level", "Low_Voltage_Lower_Fluid_Level", "Oil_Temperature"]):
-        # model_name = "microsoft/MiniLM-L12-H384-uncased"
-        #
-        # tokenizer = BertTokenizer.from_pretrained(model_name)
-        # Bmodel = BertModel.from_pretrained(model_name, output_hidden_states=True).to('cuda')
-        # Bmodel.eval()
-
-        features =  ' '.join(feature_name)
-
-        # inputs = self.tokenizer(features, return_tensors='pt', truncation=True).to('cuda')
-
-        inputs = self.tokenizer(features, return_tensors='pt', truncation=True).to('cuda')
-
-        input_ids = inputs["input_ids"]
-        attention_mask = inputs["attention_mask"]
-
-
-        with torch.no_grad():
-            # outputs = self.Bmodel(input_ids=input_ids, attention_mask=attention_mask)
-
-            outputs = self.Bmodel(input_ids=input_ids, attention_mask=attention_mask)
-
-        encoded = outputs.hidden_states[0].squeeze(0).mean(dim=0)
-
-
-      #  encoded = torch.tensor(encoded.values).squeeze(1).double().to('cuda')
-
-        return self.embed(encoded.to('cuda'))
+# class FeatureNameLoader():
+#     def __init__(self,root_path, data_paths,target):
+#         self.root_path = root_path
+#         self.data_paths = data_paths
+#         self.target = target
+#         self.featureDatasets = []
+#     def loading(self):
+#         dataps = self.data_paths.split(',')
+#         for datap in dataps:
+#             df_raw = pd.read_csv(os.path.join(self.root_path,
+#                                               datap))
+#             cols = list(df_raw.columns)
+#             cols.remove(self.target)
+#             cols.remove('date')
+#             cols.insert(0,'date')
+#             cols.append(self.target)
+#             self.featureDatasets.extend(cols)
 
 
 class PositionalEmbedding(nn.Module):
@@ -172,7 +120,7 @@ class TimeFeatureEmbedding(nn.Module):
     def __init__(self, d_model, embed_type='timeF', freq='h'):
         super(TimeFeatureEmbedding, self).__init__()
 
-        freq_map = {'h': 4, 't': 6, 's': 7,
+        freq_map = {'h': 4, 't': 5, 's': 6,
                     'm': 1, 'a': 1, 'w': 2, 'd': 3, 'b': 3}
         d_inp = freq_map[freq]
         self.embed = nn.Linear(d_inp, d_model, bias=False)
@@ -181,8 +129,50 @@ class TimeFeatureEmbedding(nn.Module):
         return self.embed(x)
 
 
+class FeatureNameEmbedding(nn.Module):
+    def __init__(self, d_model, feature_name):
+        super(FeatureNameEmbedding, self).__init__()
+
+        model_name = "microsoft/MiniLM-L12-H384-uncased"
+        tokenizer = BertTokenizer.from_pretrained(model_name)
+        model = BertModel.from_pretrained(model_name, output_hidden_states=True)
+        model.eval()
+
+        feature_dictionary = {}
+        for feature in feature_name:
+            inputs = tokenizer(feature, return_tensors='pt', truncation=True)
+            input_ids = inputs["input_ids"]
+            attention_mask = inputs["attention_mask"]
+
+            with torch.no_grad():
+                outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+
+            encoded = outputs.hidden_states[0].squeeze(0).mean(dim=0)
+            feature_dictionary[feature] = encoded
+        input_dim = 384
+        hidden_dim = 128
+        output_dim = d_model
+
+        self.embed = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, output_dim)
+        ).to('cuda')
+
+    def forward(self, feature_name):
+
+        #  encoded = torch.tensor(encoded.values).squeeze(1).double().to('cuda')
+        encoded = torch.zeros(384).to('cuda')
+        for feature in feature_name:
+            encoded += self.feature_dictionary[feature]
+        return self.embed(encoded.to('cuda'))
+
+
 class DataEmbedding(nn.Module):
-    def __init__(self, c_in, d_model, embed_type='fixed', freq='h', dropout=0.1):
+    def __init__(self, c_in, d_model, embed_type='fixed', freq='h', dropout=0.1,
+                 feature_name=["High_Voltage_Upper_Fluid_Level", "High_Voltage_Lower_Fluid_Level",
+                               "Medium_Voltage_Upper_Fluid_Level", "Medium_Voltage_Lower_Fluid_Level",
+                               "Low_Voltage_Upper_Fluid_Level", "Low_Voltage_Lower_Fluid_Level", "Oil_Temperature"]):
         super(DataEmbedding, self).__init__()
 
         self.value_embedding = TokenEmbedding(c_in=c_in, d_model=d_model)
@@ -190,16 +180,17 @@ class DataEmbedding(nn.Module):
         self.temporal_embedding = TemporalEmbedding(d_model=d_model, embed_type=embed_type,
                                                     freq=freq) if embed_type != 'timeF' else TimeFeatureEmbedding(
             d_model=d_model, embed_type=embed_type, freq=freq)
+        self.feature_name_embedding = FeatureNameEmbedding(d_model=d_model, feature_name=feature_name)
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, x, x_mark):
-        # print(x.size(), x_mark.size())
-        # exit()
         if x_mark is None:
             x = self.value_embedding(x) + self.position_embedding(x)
         else:
             x = self.value_embedding(
-                x) + self.temporal_embedding(x_mark) + self.position_embedding(x)
+                x) + self.temporal_embedding(x_mark) + self.position_embedding(x) + self.feature_name_embedding()
+            # x = self.value_embedding(
+            #     x) + self.temporal_embedding(x_mark) + self.position_embedding(x)
         return self.dropout(x)
 
 
@@ -221,7 +212,9 @@ class DataEmbedding_inverted(nn.Module):
 
 
 class DataEmbedding_wo_pos(nn.Module):
-    def __init__(self, root_path, data_paths, target, c_in, d_model, embed_type='fixed', freq='h', dropout=0.1):
+    def __init__(self, c_in, d_model, embed_type='fixed', freq='h', dropout=0.1,feature_name=["High_Voltage_Upper_Fluid_Level", "High_Voltage_Lower_Fluid_Level",
+                               "Medium_Voltage_Upper_Fluid_Level", "Medium_Voltage_Lower_Fluid_Level",
+                               "Low_Voltage_Upper_Fluid_Level", "Low_Voltage_Lower_Fluid_Level", "Oil_Temperature"]):
         super(DataEmbedding_wo_pos, self).__init__()
 
         self.value_embedding = TokenEmbedding(c_in=c_in, d_model=d_model)
@@ -229,23 +222,14 @@ class DataEmbedding_wo_pos(nn.Module):
         self.temporal_embedding = TemporalEmbedding(d_model=d_model, embed_type=embed_type,
                                                     freq=freq) if embed_type != 'timeF' else TimeFeatureEmbedding(
             d_model=d_model, embed_type=embed_type, freq=freq)
-
-        self.feature_embedding = FeatureNameEmbedding(d_model=d_model)
-        self.feature_loader = FeatureNameLoader(root_path=root_path, data_paths=data_paths, target=target)
-
-        self.feature_loader.loading()
-
+        self.feature_name_embedding = FeatureNameEmbedding(d_model=d_model, feature_name=feature_name)
         self.dropout = nn.Dropout(p=dropout)
 
-    def forward(self, x, x_mark):
-        featurename = self.feature_loader.featureDatasets
+    def forward(self, x, x_mark,x_name):
         if x_mark is None:
-            x = self.value_embedding(x) + self.feature_embedding(featurename)
-            # x = self.value_embedding(x)
-
+            x = self.value_embedding(x)
         else:
-            x = self.value_embedding(x) + self.temporal_embedding(x_mark) + self.feature_embedding(featurename)
-            # x = self.value_embedding(x) + self.temporal_embedding(x_mark)
+            x = self.value_embedding(x) + self.temporal_embedding(x_mark) + self.feature_name_embedding()
         return self.dropout(x)
 
 
