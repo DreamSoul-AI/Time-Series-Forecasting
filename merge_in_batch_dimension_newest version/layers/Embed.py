@@ -229,7 +229,7 @@ class DataEmbedding_wo_pos(nn.Module):
         if x_mark is None:
             x = self.value_embedding(x)
         else:
-            x = self.value_embedding(x) + self.temporal_embedding(x_mark) + self.feature_name_embedding()
+            x = self.value_embedding(x) + self.temporal_embedding(x_mark) + self.feature_name_embedding(x_name)
         return self.dropout(x)
 
 

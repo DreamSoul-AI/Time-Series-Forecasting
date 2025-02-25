@@ -15,6 +15,9 @@ from utils.augmentation import run_augmentation_single
 
 warnings.filterwarnings('ignore')
 
+DatasetID = {'ETT-small/ETTm1.csv':0, 'ETT-small/ETTm2.csv':0,'weather/weather.csv' : 1, 'electricity/electricity.csv' : 2,
+             'exchange_rate/exchange_rate.csv':3,'illness/national_illness.csv':4,'traffic/traffic.csv':5}
+
 
 class Dataset_ETT_hour(Dataset):
     def __init__(self, args, root_path, flag='train', size=None,
@@ -273,10 +276,8 @@ class Dataset_ETT_minute(Dataset):
             seq_x_mark = self.data_stamp[s_begin:s_end]
             seq_y_mark = self.data_stamp[r_begin:r_end]
 
-            # print(seq_x_mark.shape, seq_y_mark.shape)
-            # print(type(seq_x_mark), type(seq_y_mark))
-            # print(seq_x_mark)
-            # exit()
+            featureID = list(range(1,seq_x.shape[1] + 1))
+            dataID = [DatasetID[self.data_path]]
 
 
 
@@ -305,7 +306,11 @@ class Dataset_ETT_minute(Dataset):
             # print(type(seq_x), type(seq_y), type(seq_x_mark), type(seq_y_mark))
             # exit()
 
-        return seq_x, seq_y, seq_x_mark, seq_y_mark, feature_name
+            featureID = list(range(1, seq_x.shape[1] + 1))
+            dataID = list[DatasetID[self.data_path]]
+
+
+        return seq_x, seq_y, seq_x_mark, seq_y_mark, featureID, dataID
 
     def __len__(self):
         if self.args.feature_type == 'multi':
@@ -430,6 +435,9 @@ class Dataset_Custom(Dataset):
             seq_x_mark = self.data_stamp[s_begin:s_end]
             seq_y_mark = self.data_stamp[r_begin:r_end]
 
+            featureID = list(range(1, seq_x.shape[1] + 1))
+            dataID = [DatasetID[self.data_path]]
+
 
 
 
@@ -455,7 +463,10 @@ class Dataset_Custom(Dataset):
             # print(type(seq_x), type(seq_y), type(seq_x_mark), type(seq_y_mark))
             # exit()
 
-        return seq_x, seq_y, seq_x_mark, seq_y_mark
+            featureID = list(range(1, seq_x.shape[1] + 1))
+            dataID = list[DatasetID[self.data_path]]
+
+        return seq_x, seq_y, seq_x_mark, seq_y_mark , featureID, dataID
 
     def __len__(self):
         if self.args.feature_type == 'multi':

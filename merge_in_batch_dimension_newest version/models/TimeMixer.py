@@ -203,11 +203,10 @@ class Model(nn.Module):
 
         self.preprocess = series_decomp(configs.moving_avg)
         # self.enc_in = configs.enc_in
-        self.name = []
 
         if self.channel_independence:
             self.enc_embedding = DataEmbedding_wo_pos(1, configs.d_model, configs.embed, configs.freq,
-                                                      configs.dropout,self.name)
+                                                      configs.dropout,configs.feature_name)
         else:
             self.enc_embedding = DataEmbedding_wo_pos(configs.enc_in, configs.d_model, configs.embed, configs.freq,
                                                       configs.dropout)
@@ -330,7 +329,7 @@ class Model(nn.Module):
 
         return x_enc, x_mark_enc
 
-    def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec):
+    def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec,featurename):
 
         x_enc, x_mark_enc = self.__multi_scale_process_inputs(x_enc, x_mark_enc)
 
@@ -361,7 +360,7 @@ class Model(nn.Module):
         x_list = self.pre_enc(x_list)
         if x_mark_enc is not None:
             for i, x, x_mark in zip(range(len(x_list[0])), x_list[0], x_mark_list):
-                enc_out = self.enc_embedding(x, x_mark)  # [B,T,C]
+                enc_out = self.enc_embedding(x, x_mark,featurename)  # [B,T,C]
                 enc_out_list.append(enc_out)
         else:
             for i, x in zip(range(len(x_list[0])), x_list[0]):
@@ -503,9 +502,9 @@ class Model(nn.Module):
                   (means[:, 0, :].unsqueeze(1).repeat(1, self.seq_len, 1))
         return dec_out
 
-    def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
+    def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, featurename,mask=None):
         if self.task_name == 'long_term_forecast' or self.task_name == 'short_term_forecast':
-            dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec)
+            dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec,featurename)
             return dec_out
         if self.task_name == 'imputation':
             dec_out = self.imputation(x_enc, x_mark_enc, mask)

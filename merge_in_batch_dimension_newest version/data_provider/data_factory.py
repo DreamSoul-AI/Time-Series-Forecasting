@@ -27,13 +27,33 @@ data_dict = {
 #相反,则需要在DataLoader里面声明"collate_fn=my_collate".
 
 def my_collate(batch):
-    seqx, seqy,seqxmark, seqymark,feature_name = zip(*batch)
+    # seqx, seqy, seqxmark, seqymark, feature_name = zip(*batch)
 
-    feature_name_list = [x for x in feature_name]
+    # feature_name_list = [x for x in feature_name]
+    # feature = []
+    #
+    # for x in feature_name_list:
+    #     feature.extend(x)
+    seqx, seqy, seqxmark, seqymark, featureID, dataID = zip(*batch)
+    feature_ID_list = [x for x in featureID]
     feature = []
 
-    for x in feature_name_list:
+    for x in feature_ID_list:
         feature.extend(x)
+
+
+    data_ID_list = [x for x in dataID]
+    dID = []
+
+    for x in data_ID_list:
+        dID.extend(x)
+
+
+    # feature_name_list = [x for x in feature_name]
+    # feature = []
+    #
+    # for x in feature_name_list:
+    #     feature.extend(x)
 
     x_tensor = [torch.tensor(x) for x in seqx]
     # print(type(x_tensor))
@@ -44,12 +64,7 @@ def my_collate(batch):
     x_processed = x_processed.permute(1,0)
     x_processed = x_processed.unsqueeze(-1)
 
-    print(x_processed.size())
-
-    print(type(feature))
-    print(len(feature))
-    print(feature)
-    exit()
+    # print(x_processed.size())
 
     y_tensor = [torch.tensor(y) for y in seqy]
     y_processed = torch.cat(y_tensor, dim=1)
@@ -73,11 +88,12 @@ def my_collate(batch):
     seqx_mark_tensor = torch.cat(seqxmark_tensor_combine,dim = 0)
     seqy_mark_tensor = torch.cat(seqymark_tensor_combine,dim = 0)
 
-    print(x_processed.size())
-    exit()
+    # print(x_processed.size())
+    # exit()
 
 
-    return x_processed,y_processed,seqx_mark_tensor,seqy_mark_tensor,feature
+    # return x_processed,y_processed,seqx_mark_tensor,seqy_mark_tensor,feature
+    return x_processed, y_processed, seqx_mark_tensor, seqy_mark_tensor, feature, dID
 
 # the data paths of the train is different from that of the test/validation. so I devided them into to cases
 def data_provider(args, flag, tdatapath = None, tdata = None, datapath = None, data = None):

@@ -9,6 +9,7 @@ from exp.exp_classification import Exp_Classification
 from utils.print_args import print_args
 import random
 import numpy as np
+import pandas as pd
 
 if __name__ == '__main__':
     fix_seed = 2021
@@ -41,6 +42,8 @@ if __name__ == '__main__':
     parser.add_argument('--freq', type=str, default='h',
                         help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
     parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
+
+    parser.add_argument('--feature_name', type=str, default=[], help='feature_name')
 
 
     # forecasting task
@@ -176,6 +179,17 @@ if __name__ == '__main__':
         for ii in range(args.itr):
             # setting record of experiments
             exp = Exp(args)  # set experiments
+
+            # dataps = args.tdata_path.split(',')
+            # for datap in dataps:
+            #     df_raw = pd.read_csv(os.path.join(args.root_path,
+            #                                               datap))
+            #     cols = list(df_raw.columns)
+            #     cols.remove(args.target)
+            #     cols.remove('date')
+            #     cols.append(args.target)
+            #     args.feature_name.extend(cols)
+
             setting = '{}_{}_{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_expand{}_dc{}_fc{}_eb{}_dt{}_{}_{}'.format(
                 args.task_name,
                 args.model_id,
