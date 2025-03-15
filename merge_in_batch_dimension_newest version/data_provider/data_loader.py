@@ -15,8 +15,8 @@ from utils.augmentation import run_augmentation_single
 
 warnings.filterwarnings('ignore')
 
-DatasetID = {'ETT-small/ETTm1.csv':0, 'ETT-small/ETTm2.csv':0,'weather/weather.csv' : 1, 'electricity/electricity.csv' : 2,
-             'exchange_rate/exchange_rate.csv':3,'illness/national_illness.csv':4,'traffic/traffic.csv':5}
+DatasetID = {'ETT-small/ETTm1.csv':"0", 'ETT-small/ETTm2.csv':"0",'weather/weather.csv' : "1", 'electricity/electricity.csv' : "2",
+             'exchange_rate/exchange_rate.csv':"3",'illness/national_illness.csv':"4",'traffic/traffic.csv':"5"}
 
 
 class Dataset_ETT_hour(Dataset):

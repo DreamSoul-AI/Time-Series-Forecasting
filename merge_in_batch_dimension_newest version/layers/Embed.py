@@ -1,31 +1,10 @@
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils import weight_norm
 import math
 import pandas as pd
-import os
 from transformers import BertTokenizer, BertModel
-
-
-# class FeatureNameLoader():
-#     def __init__(self,root_path, data_paths,target):
-#         self.root_path = root_path
-#         self.data_paths = data_paths
-#         self.target = target
-#         self.featureDatasets = []
-#     def loading(self):
-#         dataps = self.data_paths.split(',')
-#         for datap in dataps:
-#             df_raw = pd.read_csv(os.path.join(self.root_path,
-#                                               datap))
-#             cols = list(df_raw.columns)
-#             cols.remove(self.target)
-#             cols.remove('date')
-#             cols.insert(0,'date')
-#             cols.append(self.target)
-#             self.featureDatasets.extend(cols)
 
 
 class PositionalEmbedding(nn.Module):
@@ -120,7 +99,7 @@ class TimeFeatureEmbedding(nn.Module):
     def __init__(self, d_model, embed_type='timeF', freq='h'):
         super(TimeFeatureEmbedding, self).__init__()
 
-        freq_map = {'h': 4, 't': 5, 's': 6,
+        freq_map = {'h': 4, 't': 6, 's': 7,
                     'm': 1, 'a': 1, 'w': 2, 'd': 3, 'b': 3}
         d_inp = freq_map[freq]
         self.embed = nn.Linear(d_inp, d_model, bias=False)
@@ -130,25 +109,29 @@ class TimeFeatureEmbedding(nn.Module):
 
 
 class FeatureNameEmbedding(nn.Module):
-    def __init__(self, d_model, feature_name):
+    def __init__(self, d_model, datasetID_dict):
         super(FeatureNameEmbedding, self).__init__()
 
-        model_name = "microsoft/MiniLM-L12-H384-uncased"
-        tokenizer = BertTokenizer.from_pretrained(model_name)
-        model = BertModel.from_pretrained(model_name, output_hidden_states=True)
-        model.eval()
+        # model_name = "microsoft/MiniLM-L12-H384-uncased"
+        # tokenizer = BertTokenizer.from_pretrained(model_name)
+        # model = BertModel.from_pretrained(model_name, output_hidden_states=True)
+        # model.eval()
 
-        feature_dictionary = {}
-        for feature in feature_name:
-            inputs = tokenizer(feature, return_tensors='pt', truncation=True)
-            input_ids = inputs["input_ids"]
-            attention_mask = inputs["attention_mask"]
+        # feature_dictionary = {}
+        # for feature in feature_name:
+        #     inputs = tokenizer(feature, return_tensors='pt', truncation=True)
+        #     input_ids = inputs["input_ids"]
+        #     attention_mask = inputs["attention_mask"]
 
-            with torch.no_grad():
-                outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+        #     with torch.no_grad():
+        #         outputs = model(input_ids=input_ids, attention_mask=attention_mask)
 
-            encoded = outputs.hidden_states[0].squeeze(0).mean(dim=0)
-            feature_dictionary[feature] = encoded
+        #     encoded = outputs.hidden_states[0].squeeze(0).mean(dim=0)
+        #     feature_dictionary[feature] = encoded
+        self.datasetID_dict = datasetID_dict
+        feature_nums = sum(v for v in datasetID_dict.values())
+        self.embeddings = nn.Embedding(feature_nums, 384)
+
         input_dim = 384
         hidden_dim = 128
         output_dim = d_model
@@ -159,13 +142,29 @@ class FeatureNameEmbedding(nn.Module):
             nn.Linear(hidden_dim, output_dim)
         ).to('cuda')
 
-    def forward(self, feature_name):
+    def forward(self, feature_id, datasetID):
 
         #  encoded = torch.tensor(encoded.values).squeeze(1).double().to('cuda')
-        encoded = torch.zeros(384).to('cuda')
-        for feature in feature_name:
-            encoded += self.feature_dictionary[feature]
-        return self.embed(encoded.to('cuda'))
+        # encoded = torch.zeros(384).to('cuda')
+        # for feature in feature_name:
+        #     encoded += self.feature_dictionary[feature]
+        # return self.embed(encoded.to('cuda'))
+
+        encoded = torch.zeros(384).unsqueeze(0).to('cuda')
+        for feature_idi, datasetIDi in zip(feature_id, datasetID):
+            index = 0
+
+            for i in range(int(datasetIDi)):
+                index += self.datasetID_dict[str(i)]
+
+            index += feature_idi
+
+            encoded = torch.cat((encoded, self.embeddings(torch.tensor([index],device='cuda')).to('cuda')), dim=0)
+
+
+        encoded = self.embed(encoded)
+        encoded = encoded.sum(dim=0) / len(feature_id)
+        return encoded
 
 
 class DataEmbedding(nn.Module):
@@ -212,9 +211,7 @@ class DataEmbedding_inverted(nn.Module):
 
 
 class DataEmbedding_wo_pos(nn.Module):
-    def __init__(self, c_in, d_model, embed_type='fixed', freq='h', dropout=0.1,feature_name=["High_Voltage_Upper_Fluid_Level", "High_Voltage_Lower_Fluid_Level",
-                               "Medium_Voltage_Upper_Fluid_Level", "Medium_Voltage_Lower_Fluid_Level",
-                               "Low_Voltage_Upper_Fluid_Level", "Low_Voltage_Lower_Fluid_Level", "Oil_Temperature"]):
+    def __init__(self, c_in, d_model, datasetID_dict, embed_type='fixed', freq='h', dropout=0.1):
         super(DataEmbedding_wo_pos, self).__init__()
 
         self.value_embedding = TokenEmbedding(c_in=c_in, d_model=d_model)
@@ -222,14 +219,21 @@ class DataEmbedding_wo_pos(nn.Module):
         self.temporal_embedding = TemporalEmbedding(d_model=d_model, embed_type=embed_type,
                                                     freq=freq) if embed_type != 'timeF' else TimeFeatureEmbedding(
             d_model=d_model, embed_type=embed_type, freq=freq)
-        self.feature_name_embedding = FeatureNameEmbedding(d_model=d_model, feature_name=feature_name)
+        self.feature_name_embedding = FeatureNameEmbedding(d_model=d_model, datasetID_dict=datasetID_dict)
         self.dropout = nn.Dropout(p=dropout)
 
-    def forward(self, x, x_mark,x_name):
+    def forward(self, x, x_mark, feature_id, datasetID):
         if x_mark is None:
-            x = self.value_embedding(x)
+            x = self.value_embedding(x) + self.feature_name_embedding(feature_id, datasetID)
         else:
-            x = self.value_embedding(x) + self.temporal_embedding(x_mark) + self.feature_name_embedding(x_name)
+
+
+            # print(self.value_embedding(x).size())
+            # print(self.temporal_embedding(x_mark).size())
+            # print(self.feature_name_embedding(feature_id,datasetID).size())
+
+
+            x = self.value_embedding(x) + self.temporal_embedding(x_mark) + self.feature_name_embedding(feature_id,datasetID)
         return self.dropout(x)
 
 

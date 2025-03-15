@@ -47,6 +47,8 @@ def my_collate(batch):
 
     for x in data_ID_list:
         dID.extend(x)
+    # print(dID)
+    # exit()
 
 
     # feature_name_list = [x for x in feature_name]

@@ -197,18 +197,15 @@ class Model(nn.Module):
         self.channel_independence = configs.channel_independence
         self.pdm_blocks = nn.ModuleList([PastDecomposableMixing(configs)
                                          for _ in range(configs.e_layers)])
-        self.root_path = configs.root_path
-        self.data_path = configs.tdata_path
-        self.target = configs.target
 
         self.preprocess = series_decomp(configs.moving_avg)
-        # self.enc_in = configs.enc_in
+        self.enc_in = configs.enc_in
 
         if self.channel_independence:
-            self.enc_embedding = DataEmbedding_wo_pos(1, configs.d_model, configs.embed, configs.freq,
-                                                      configs.dropout,configs.feature_name)
+            self.enc_embedding = DataEmbedding_wo_pos(1, configs.d_model, configs.datasetID_dict,configs.embed, configs.freq,
+                                                      configs.dropout)
         else:
-            self.enc_embedding = DataEmbedding_wo_pos(configs.enc_in, configs.d_model, configs.embed, configs.freq,
+            self.enc_embedding = DataEmbedding_wo_pos(configs.enc_in, configs.d_model, configs.datasetID_dict,configs.feature_nums, configs.embed, configs.freq,
                                                       configs.dropout)
 
         self.layer = configs.e_layers
@@ -259,7 +256,7 @@ class Model(nn.Module):
         if self.task_name == 'imputation' or self.task_name == 'anomaly_detection':
             if self.channel_independence:
                 self.projection_layer = nn.Linear(
-                    configs.d_model, configs.c_out, bias=True)
+                    configs.d_model, 1, bias=True)
             else:
                 self.projection_layer = nn.Linear(
                     configs.d_model, configs.c_out, bias=True)
@@ -329,9 +326,10 @@ class Model(nn.Module):
 
         return x_enc, x_mark_enc
 
-    def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec,featurename):
+    def forecast(self, x_enc, x_mark_enc, x_dec, x_mark_dec, feature_id,dataset_ID):
 
         x_enc, x_mark_enc = self.__multi_scale_process_inputs(x_enc, x_mark_enc)
+
 
         x_list = []
         x_mark_list = []
@@ -358,13 +356,18 @@ class Model(nn.Module):
         # embedding
         enc_out_list = []
         x_list = self.pre_enc(x_list)
+        # print(type(feature_id))
+        # print(type(dataset_ID))
+        # print(feature_id)
+        # print(dataset_ID)
+        # exit()
         if x_mark_enc is not None:
             for i, x, x_mark in zip(range(len(x_list[0])), x_list[0], x_mark_list):
-                enc_out = self.enc_embedding(x, x_mark,featurename)  # [B,T,C]
+                enc_out = self.enc_embedding(x, x_mark, feature_id,dataset_ID)  # [B,T,C]
                 enc_out_list.append(enc_out)
         else:
-            for i, x in zip(range(len(x_list[0])), x_list[0]):
-                enc_out = self.enc_embedding(x, None)  # [B,T,C]
+            for i, x, x_mark in zip(range(len(x_list[0])), x_list[0], x_mark_list):
+                enc_out = self.enc_embedding(x, None, feature_id,dataset_ID)  # [B,T,C]
                 enc_out_list.append(enc_out)
 
         # Past Decomposable Mixing as encoder for past
@@ -502,9 +505,9 @@ class Model(nn.Module):
                   (means[:, 0, :].unsqueeze(1).repeat(1, self.seq_len, 1))
         return dec_out
 
-    def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, featurename,mask=None):
+    def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, feature_id, dataset_ID,mask=None):
         if self.task_name == 'long_term_forecast' or self.task_name == 'short_term_forecast':
-            dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec,featurename)
+            dec_out = self.forecast(x_enc, x_mark_enc, x_dec, x_mark_dec, feature_id,dataset_ID)
             return dec_out
         if self.task_name == 'imputation':
             dec_out = self.imputation(x_enc, x_mark_enc, mask)
@@ -517,3 +520,4 @@ class Model(nn.Module):
             return dec_out  # [B, N]
         else:
             raise ValueError('Other tasks implemented yet')
+

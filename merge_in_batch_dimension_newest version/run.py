@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import torch
 from exp.exp_long_term_forecasting import Exp_Long_Term_Forecast
@@ -43,7 +44,7 @@ if __name__ == '__main__':
                         help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
     parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
 
-    parser.add_argument('--feature_name', type=str, default=[], help='feature_name')
+    parser.add_argument('--datasetID_dict', type=json.loads, default=json.dumps({"0": 7, "1": 21, "2": 321, "3": 8, "4": 7, "5": 862}), help='feature_name')
 
 
     # forecasting task
